@@ -4,7 +4,6 @@ import { Route, Routes } from 'react-router'
 import ProtectedRoute from './components/ProtectedRoute'
 import Home from './pages/Home'
 import Login from './pages/Login'
-import NotFound from './pages/NotFound'
 import Profile from './pages/Profile'
 import Register from './pages/Register'
 import { setMobile } from './redux/slices/userReducer'
@@ -47,7 +46,7 @@ function App() {
 						</ProtectedRoute>
 					}
 				/>
-				<Route path='*' element={<NotFound />} />
+				<Route path='*' element={<Home />} />
 			</Routes>
 		</Theme>
 	)
