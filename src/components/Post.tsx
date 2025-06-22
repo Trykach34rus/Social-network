@@ -2,6 +2,7 @@ import {
 	ChatBubbleIcon,
 	EyeOpenIcon,
 	HeartFilledIcon,
+	HeartIcon,
 	PaperPlaneIcon,
 } from '@radix-ui/react-icons'
 import {
@@ -17,15 +18,20 @@ import {
 	TextField,
 } from '@radix-ui/themes'
 import { useEffect, useState } from 'react'
+import { Link } from 'react-router'
 import axiosInstance from '../axiosInstance'
+import { addNewComment } from '../redux/slices/postsReducer'
+import { useAppDispatch, useAppSelector } from '../redux/store'
 import { Comment, PostT, UserT } from '../types'
 
 type Props = {
 	item: PostT
+	fullWidth?: boolean
 }
 
-export default function Post({ item }: Props) {
+export default function Post({ item, fullWidth = false }: Props) {
 	const [user, setUser] = useState<UserT | null>(null)
+	const [body, setBody] = useState<string>('')
 	const [comments, setComments] = useState<Comment[]>([])
 	const [open, setOpen] = useState<boolean>(false)
 	useEffect(() => {
@@ -40,14 +46,45 @@ export default function Post({ item }: Props) {
 			})
 		}
 	}, [item.userId])
-	console.log(comments)
+
+	const dispatch = useAppDispatch()
+	const { userId, userInfo } = useAppSelector(state => state.user)
+
+	function handleComment() {
+		if (
+			body &&
+			userId &&
+			userInfo?.id &&
+			userInfo.username &&
+			userInfo.firstName &&
+			userInfo.lastName
+		) {
+			dispatch(addNewComment({ postId: item.id, likes: 0, body, userId }))
+			setComments(prev => [
+				...prev,
+				{
+					postId: item.id,
+					likes: 0,
+					body,
+					user: {
+						id: userInfo.id,
+						username: userInfo.username,
+						fullName: userInfo.firstName + ' ' + userInfo.lastName,
+					},
+					id: Date.now(),
+				},
+			])
+		}
+	}
 	return (
-		<Box width='600px'>
+		<Box width={fullWidth ? '100%' : '600px'}>
 			<Card size='2'>
 				<Flex justify={'between'} align={'center'}>
 					{user && (
 						<Flex gap='3' align='center'>
-							<Avatar size='3' src={user.image} radius='full' fallback='T' />
+							<Link to={`/profile/${user.id}`}>
+								<Avatar size='3' src={user.image} radius='full' fallback='T' />
+							</Link>
 							<Box>
 								<Text as='div' size='2' weight='bold'>
 									{user.firstName} {user.lastName}
@@ -97,30 +134,47 @@ export default function Post({ item }: Props) {
 						<Flex direction={'column'} gap={'2'}>
 							{comments.map(comment => (
 								<Flex gap='3' align='end' key={comment.id}>
-									<Avatar
-										size='3'
-										radius='full'
-										fallback={comment.user.fullName[0]}
-										color='indigo'
-									/>
+									<Link to={`/profile/${comment.user.id}`}>
+										<Avatar
+											size='3'
+											radius='full'
+											fallback={comment.user.fullName[0]}
+											color='indigo'
+										/>
+									</Link>
+
 									<Card>
-										<Text as='div' size='2' weight='bold'>
-											{comment.user.fullName}
-										</Text>
-										<Text as='div' size='2' color='gray'>
-											{comment.body}
-										</Text>
+										<Flex justify={'between'} align={'start'}>
+											<Flex direction={'column'} gap={'2'}>
+												<Text as='div' size='2' weight='bold'>
+													{comment.user.fullName}
+												</Text>
+												<Text as='div' size='2' color='gray'>
+													{comment.body}
+												</Text>
+											</Flex>
+											<Flex align={'center'} gap={'1'}>
+												<HeartIcon />
+												<Text size={'1'}>{comment.likes}</Text>
+											</Flex>
+										</Flex>
 									</Card>
 								</Flex>
 							))}
 						</Flex>
 						<Flex mt={'5'} gap={'2'}>
 							<TextField.Root
+								value={body}
+								onChange={e => setBody(e.target.value)}
 								size='2'
 								placeholder='Write a message...'
 								style={{ width: '100%' }}
 							/>
-							<IconButton size={'2'}>
+							<IconButton
+								size={'2'}
+								onClick={handleComment}
+								disabled={body.trim().length === 0}
+							>
 								<PaperPlaneIcon />
 							</IconButton>
 						</Flex>

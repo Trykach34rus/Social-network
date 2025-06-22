@@ -7,6 +7,7 @@ import {
 	Heading,
 	RadioCards,
 	Select,
+	Skeleton,
 	Text,
 	TextField,
 } from '@radix-ui/themes'
@@ -22,8 +23,6 @@ import { getAllTags, setLimit } from '../redux/slices/postsReducer'
 import { useAppDispatch, useAppSelector } from '../redux/store'
 import { Sort } from '../types'
 
-type Props = {}
-
 const sortArray: Sort[] = [
 	{ id: 1, sortBy: 'id', order: 'asc', name: 'Default' },
 	{ id: 2, sortBy: 'title', order: 'asc', name: 'Title' },
@@ -32,12 +31,16 @@ const sortArray: Sort[] = [
 	{ id: 5, sortBy: 'views', order: 'desc', name: 'Views ↓' },
 ]
 
-export default function Filters({}: Props) {
+export default function Filters() {
 	const dispatch = useAppDispatch()
-	const { tagList, limit } = useAppSelector(state => state.posts)
+	const { tagList, limit, tagsLoading } = useAppSelector(state => state.posts)
 	const { search, tag, sort } = useAppSelector(state => state.filter)
+	const { isMobile } = useAppSelector(state => state.user)
 
 	const [searchValue, setSearchValue] = useState(search)
+	const tagsSkeleton = [...new Array(24)].map((_, i) => (
+		<Skeleton height={'48px'} width={'107px'} key={i}></Skeleton>
+	))
 
 	function clearAll() {
 		dispatch(clearFilters())
@@ -54,7 +57,14 @@ export default function Filters({}: Props) {
 		dispatch(getAllTags())
 	}, [])
 	return (
-		<Box width={'500px'} style={{ position: 'sticky', top: '20px', zIndex: 1 }}>
+		<Box
+			width={isMobile ? '100%' : '500px'}
+			style={{
+				position: isMobile ? 'static' : 'sticky',
+				top: '20px',
+				zIndex: 1,
+			}}
+		>
 			<Card>
 				<TextField.Root
 					placeholder='Search the posts…'
@@ -113,15 +123,17 @@ export default function Filters({}: Props) {
 						</Select.Root>
 					</Flex>
 					<RadioCards.Root
-						columns={{ initial: '1', sm: '4' }}
+						columns={{ initial: '4', sm: '4' }}
 						value={tag}
 						onValueChange={value => dispatch(setTag(value))}
 					>
-						{tagList.map(tag => (
-							<RadioCards.Item value={tag}>
-								<Text>{tag}</Text>
-							</RadioCards.Item>
-						))}
+						{tagsLoading
+							? tagsSkeleton
+							: tagList.map(tag => (
+									<RadioCards.Item value={tag}>
+										<Text>{tag}</Text>
+									</RadioCards.Item>
+							  ))}
 					</RadioCards.Root>
 					<Button size={'4'} onClick={clearAll}>
 						Clear All

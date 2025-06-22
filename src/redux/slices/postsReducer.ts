@@ -1,6 +1,6 @@
 import { createAsyncThunk, createSlice, PayloadAction } from '@reduxjs/toolkit'
 import axiosInstance from '../../axiosInstance'
-import { PostT, Sort } from '../../types'
+import { FormData, PostT, Reaction, Sort } from '../../types'
 
 interface PostsState {
 	postsData: PostT[]
@@ -8,6 +8,8 @@ interface PostsState {
 	limit: number
 	page: number
 	maxPage: number
+	postsLoading: boolean
+	tagsLoading: boolean
 }
 
 const initialState: PostsState = {
@@ -16,6 +18,8 @@ const initialState: PostsState = {
 	limit: 10,
 	page: 1,
 	maxPage: 10,
+	postsLoading: false,
+	tagsLoading: false,
 }
 
 const getAllPosts = createAsyncThunk(
@@ -45,6 +49,18 @@ const getAllPosts = createAsyncThunk(
 const getAllTags = createAsyncThunk('posts/getAllTags', () => {
 	return axiosInstance.get('/posts/tag-list').then(res => res.data)
 })
+const addNewPost = createAsyncThunk(
+	'posts/addNewPost',
+	(data: FormData & { userId: number; reactions: Reaction; views: number }) => {
+		return axiosInstance.post('/posts/add', data).then(res => res.data)
+	}
+)
+const addNewComment = createAsyncThunk(
+	'posts/addNewComment',
+	(data: { postId: number; userId: number; body: string; likes: number }) => {
+		return axiosInstance.post('/comments/add', data).then(res => res.data)
+	}
+)
 
 export const postsSlice = createSlice({
 	name: 'posts',
@@ -58,24 +74,37 @@ export const postsSlice = createSlice({
 		},
 	},
 	extraReducers: builder => {
+		builder.addCase(getAllPosts.pending, state => {
+			state.postsLoading = true
+		})
 		builder.addCase(getAllPosts.fulfilled, (state, action) => {
-			console.log(action.payload)
+			state.postsLoading = false
 			state.postsData = action.payload.posts
 			state.maxPage = Math.ceil(action.payload.total / state.limit)
 		})
-		builder.addCase(getAllPosts.rejected, (state, acion) => {
-			console.log(acion.payload)
+		builder.addCase(getAllPosts.rejected, state => {
+			state.postsLoading = false
 		})
+		builder.addCase(getAllTags.pending, state => {
+			state.tagsLoading = true
+		})
+
 		builder.addCase(getAllTags.fulfilled, (state, action) => {
-			console.log(action.payload)
+			state.tagsLoading = false
 			state.tagList = action.payload.slice(0, 24)
 		})
-		builder.addCase(getAllTags.rejected, (state, acion) => {
-			console.log(acion.payload)
+		builder.addCase(getAllTags.rejected, state => {
+			state.tagsLoading = false
+		})
+		builder.addCase(addNewPost.fulfilled, (state, action) => {
+			state.postsData.unshift(action.payload)
+		})
+		builder.addCase(addNewComment.fulfilled, (_, action) => {
+			console.log(action.payload)
 		})
 	},
 })
 
-export { getAllPosts, getAllTags }
+export { addNewComment, addNewPost, getAllPosts, getAllTags }
 export const { setLimit, setPage } = postsSlice.actions
 export default postsSlice.reducer

@@ -1,4 +1,4 @@
-type Reaction = {
+export type Reaction = {
 	likes: number
 	dislikes: number
 }
@@ -105,4 +105,9 @@ export type Sort = {
 	order: 'asc' | 'desc'
 	id: number
 	name: string
+}
+export type FormData = {
+	title: string
+	body: string
+	tags: string[]
 }

@@ -5,25 +5,29 @@ import {
 	Flex,
 	Heading,
 	Select,
+	Skeleton,
 	Text,
 } from '@radix-ui/themes'
 import { useEffect } from 'react'
 import Filters from '../components/Filters'
 import Header from '../components/Header'
 import Post from '../components/Post'
+import PostForm from '../components/PostForm'
 import { getAllPosts, setPage } from '../redux/slices/postsReducer'
 import { useAppDispatch, useAppSelector } from '../redux/store'
 
-type Props = {}
-
-export default function Home({}: Props) {
+export default function Home() {
 	const dispatch = useAppDispatch()
 	const { search, tag, sort } = useAppSelector(state => state.filter)
-	const { postsData, limit, page, maxPage } = useAppSelector(
+	const { postsData, limit, page, maxPage, postsLoading } = useAppSelector(
 		state => state.posts
 	)
+	const { isMobile } = useAppSelector(state => state.user)
 	const skip = (page - 1) * limit
 	const pagesArr = [...new Array(maxPage)].map((_, i) => i + 1)
+	const postsSkeleton = [...new Array(4)].map((_, i) => (
+		<Skeleton height={'267px'} width={'600px'} key={i}></Skeleton>
+	))
 
 	function nextPage() {
 		dispatch(setPage(page + 1))
@@ -40,14 +44,24 @@ export default function Home({}: Props) {
 	return (
 		<Container size='4'>
 			<Header />
-			<Heading mt={'8'} size={'8'}>
-				Recent Posts
-			</Heading>
-			<Flex mt={'4'} justify={'between'} align={'start'}>
+			<Flex justify={'between'} align={'center'} mt={'8'}>
+				<Heading size={'8'}>Recent Posts</Heading>
+				<PostForm />
+			</Flex>
+
+			<Flex
+				direction={isMobile ? 'column-reverse' : 'row'}
+				mt={'4'}
+				justify={'between'}
+				align={isMobile ? 'stretch' : 'start'}
+				gap={'2'}
+			>
 				<Flex direction={'column'} gap={'4'}>
-					{postsData.map(item => (
-						<Post key={item.id} item={item} />
-					))}
+					{postsLoading
+						? postsSkeleton
+						: postsData.map(item => (
+								<Post fullWidth={isMobile} key={item.id} item={item} />
+						  ))}
 					<Flex gap={'3'} align={'center'} justify={'center'} mt={'4'} mb={'7'}>
 						<Button
 							size={'3'}
